@@ -12,7 +12,7 @@
 }
 
 .header{
-    height: 6.2rem;
+    height: 15vh;
     background-color: #060E1B;
     display: grid;
     grid-template-columns: 1fr 4fr;
@@ -21,7 +21,6 @@
 .info_user{
     display: grid;
     grid-template-columns: 1fr 3fr 1fr;
-    /*width: 23.214285714285714285714285714286rem;*/
     background-color: #101B27;
 }
 
@@ -68,14 +67,16 @@
 
 .filters{
     font-size: 1rem;
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 .filter_window{
-    width: 17rem;
+    width: 80%;
     height: 2.3rem;
     background-color: #060E1B;
     display: grid;
-    margin-top: 1.9rem;
+    
     margin-left: 2rem;
     grid-template-columns: 1fr 3fr 1fr;
     border-radius: 1rem;
@@ -98,14 +99,14 @@
 }
 
 .main_body{
+    height: 75vh;
     display: grid;
-    height: 36rem;
     grid-template-columns: 1fr 4fr;
     background-color: #060E1B;
 }
 
 .list_of_users{
-    /*margin-top: 0.14285714285714285714285714285714rem;*/
+    /*margin-top: 0.14rem;*/
     background-color: #101B27;
 }
 
@@ -196,7 +197,8 @@
     height: 5.5rem;
     width: 35rem;
     margin-top: 1rem;
-    margin-left: 40rem;
+    margin-left: auto;
+    margin-right: 3%;
     
     background-color: #101B27;
     border-radius: 1.5rem;
@@ -236,13 +238,12 @@
 
 .footer{
     display: grid;
-    height: 4.72rem;
+    height: 10vh;
     grid-template-columns: 1fr 4fr;
 }
 
 .info_creator{
-    padding-left: .5rem;
-    padding-top: .4rem;
+    margin: auto 3%;
     background-color: #060E1B;
     font-size: 0.8rem;
 }
@@ -262,6 +263,6 @@
 .icon_dispatch{
     width: 2.5rem;
     height: 2.5rem;
-    margin-top: 1.4rem;
+    margin-top: 35%;
     transform: rotate(45deg);
 }
