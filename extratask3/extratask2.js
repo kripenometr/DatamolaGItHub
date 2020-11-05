@@ -1,5 +1,3 @@
-let input_arr = [1, 2, 3, 4, 5];
-
 function max_profit(arr) {
     let dp = new Array(33333);    
 
@@ -26,5 +24,3 @@ function max_profit(arr) {
     return dp[n];
 
 }
-
-console.log(max_profit(input_arr));
