@@ -1,26 +1,30 @@
-function max_profit() {
+let input_arr = [1, 2, 3, 4, 5];
 
-    let input_arr = [];
+function max_profit(arr) {
     let dp = new Array(10001);    
 
-    for (let i = 0; i < dp.length; i++) 
+    for (let i = 0; i < dp.length; i++){ 
         dp[i] = 0;
+    }
 
-    let n = Number(prompt("Enter the size of the array: ", ""));
+    let n = arr.length;
+    let arr1 = [];
 
-    for(let i = 1; i <= n; i++)
-        input_arr[i] = Number(prompt("Enter " + (i) + " array element: " , ""));
-
+    for(let i = 1; i <= n; i++){
+        arr1[i] = arr[i - 1];
+    }
 
     for (let i = 1; i <= n; i++) {
         dp[i] =  Math.max(dp[i], dp[i - 1]);
-        for (let j = i + 1; j <= n; j++)
-            if (input_arr[i] < input_arr[j])
-                dp[j] =  Math.max(dp[j], dp[i] + input_arr[j] - input_arr[i]);
+        for (let j = i + 1; j <= n; j++){
+            if (Number(arr1[i]) < Number(arr1[j])){
+                dp[j] =  Math.max(dp[j], dp[i] + arr1[j] - arr1[i]);
+            }
+        }
     }
 
-    console.log(dp[n]);
+    return dp[n];
 
 }
 
-max_profit();
+console.log(max_profit(input_arr));
