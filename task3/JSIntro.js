@@ -172,25 +172,25 @@ const messages =  [
             if(filterConfig.hasOwnProperty("author") && filterConfig.author !== "")
                 author = filterConfig.author;
                 
-            if(filterConfig.hasOwnProperty("text") && filterConfig.text <= 200)
+            if(filterConfig.hasOwnProperty("text") && filterConfig.text.length <= 200)
                 text = filterConfig.text;
 
             if(filterConfig.hasOwnProperty("dateTo"))
-                dateTo = Date.parse(filterConfig.dateTo);
+                dateTo = filterConfig.dateTo;
 
             if(filterConfig.hasOwnProperty("dateFrom"))
-                dateFrom = Date.parse(filterConfig.dateFrom);
+                dateFrom = filterConfig.dateFrom;  // Изменено, согласен, что Date.parse не надо) 
         }
 
-        return (function arrSort(substringText = "", substringAuthor = "", dateTo = Date.parse(new Date()), dateFrom = 0) {
+        return (function arrSort(substringText = "", substringAuthor = "", dateTo = new Date(), dateFrom = 0) {
                     let arrMessages1 = [];
                     
-                    for(counter in arrMessages){
-                        if(    arrMessages[counter].text.includes(substringText) 
-                            && arrMessages[counter].author.includes(substringAuthor) 
-                            && arrMessages[counter].createdAt <= dateTo 
-                            && arrMessages[counter].createdAt >= dateFrom)
-                            arrMessages1.push(arrMessages[counter]);
+                    for(let counter of arrMessages){ //Изменено)
+                        if(    counter.text.includes(substringText) 
+                            && counter.author.includes(substringAuthor) 
+                            && counter.createdAt <= dateTo 
+                            && counter.createdAt >= dateFrom)  
+                            arrMessages1.push(counter);
                     }
             
                     return arrMessages1;
@@ -198,9 +198,7 @@ const messages =  [
     }
 
     function getMessage(id) {
-        for (counter in messages)
-            if(id === messages[counter].id)
-                return messages[counter];
+        return messages.find(function (value){return id === value.id;});   //Изменено, согласен, лучше find))
     }
 
     function validateMessage(msg){
@@ -226,34 +224,23 @@ const messages =  [
     }
 
     function editMessage(id, msg){
-        let counter = 0;
-
-        while(counter < messages.length){ // Пр
-            if(id === messages[counter].id)
-                break;
-
-            ++counter;
-        }
-        /* Это проверка на существоваеие сообщения с данным id в messages, если id не может на входе быть несуществующим, тогда эти 4 строчки, можно удалить
-            if(counter === messages.length) 
-                return false;
-        */
+        let messageId = messages.find(function (value){return id === value.id;});  // Изменено)
         let check, check1, check2;
-
-        if(check = msg.hasOwnProperty("text") && typeof(msg.text) === "string" && msg.text.length <= 200)
-            messages[counter].text = msg.text;
+        // Ну у нас же msg переданный в editMessage может не содержать все обязательные поля, так в тз написано, а раз так, то мы не можем использовать validateMessage. Или я чего-то не понимаю?
+        if(check = msg.hasOwnProperty("text") && typeof(msg.text) === "string" && msg.text.length <= 200) 
+            messageId.text = msg.text;
 
         if(check1 = msg.hasOwnProperty("isPersonal") && typeof(msg.isPersonal) === "boolean")
-            messages[counter].isPersonal = msg.isPersonal;
+            messageId.isPersonal = msg.isPersonal;
 
         if(check2 = msg.hasOwnProperty("to") && typeof(msg.to) === "string" && msg.to !== "")
-            messages[counter].to = msg.to;
+            messageId.to = msg.to;
 
         return Boolean(check + check1 + check2);
     }
 
     function removeMessage(id){
-        for (counter in messages){
+        for (let counter = 0; counter < messages.length; ++counter){ //Убрал for in
             if(id === messages[counter].id){
                 messages.splice(counter, 1);
                 return true;
