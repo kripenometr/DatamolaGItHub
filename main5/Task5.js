@@ -202,6 +202,7 @@ class UserList{
 class HeaderView{
     constructor(containerId){
         this._id = containerId;
+        this.blocker = 1;
     }
     
     get getId(){
@@ -209,8 +210,14 @@ class HeaderView{
     }
 
     display(params) {
+        if(this.blocker){
+            document.getElementById("writeMessage").innerText = "Написать сообщение";
+            --this.blocker;
+        }
+
         const insertName = document.getElementById(this.getId);
         insertName.innerText = params;
+       
     }
 }
 
@@ -229,7 +236,7 @@ class MessagesView{
     }
 
     display(params) {
-        document.getElementById(messagesView.getId).innerText = ""; ///Доделать ещё кнопку загрузкi
+        document.getElementById(this.getId).innerText = ""; ///Доделать ещё кнопку загрузкi
         
         const newMessageBox = new DocumentFragment();
         const insert = document.getElementById(this.getId);
@@ -393,8 +400,6 @@ class PersonalUsersView{
 
 function setCurrentUser(user){
     if(user !== undefined && user !== ""){
-        // Я тут немного недопонял, мы расчитываем, что пользователи не будут регистрироваться под одним именем, это понятно,
-        // а если, пользователь зарегистрирован и заходит в чат второй раз, то нам ведь не надо его добавлять в модель?
         if(userList.getUsers.find(counter => counter === user) === undefined){  
             userList.getActiveUsers.push(user);
             userList.getUsers.push(user);
@@ -403,25 +408,35 @@ function setCurrentUser(user){
         messageList.setUser = user;
 
         headerView.display(user);
+        showMessages();
     }
 }
 
 function addMessage(msg){
-    messageList.add({id: String(generatorId()), text: msg.text, author: messageList.getUser, isPersonal: msg.isPersonal, to: msg.to});
-        
-    messagesView.display(messageList.getArrCollection);
+    if(messageList.add({id: String(generatorId()), text: msg.text, author: messageList.getUser, isPersonal: msg.isPersonal, to: msg.to})){
+        showMessages();
+        return true;
+    }
+    
+    return false;
 }
 
 function editMessage(id, msg){
-    messageList.edit(id, msg);
-
-    messagesView.display(messageList.getArrCollection);
+    if(messageList.edit(id, msg)){
+        showMessages();
+        return true;
+    }
+    
+    return false;
 }
 
 function removeMessage(id){
-    messageList.remove(id);
+    if(messageList.remove(id)){
+        showMessages();
+        return true;
+    }
 
-    messagesView.display(messageList.getArrCollection);
+    return false;
 }
 
 function showMessages(skip, top, filterConfig){
