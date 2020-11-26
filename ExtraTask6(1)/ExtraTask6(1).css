@@ -1,0 +1,31 @@
+body{	
+    background-color: rgb(224, 205, 182);	
+}
+
+.no-view {
+    display: none;
+}
+
+.style-no-view{
+    color: blue;
+}
+
+.sizeText1{	
+    font-size: 1.7em;	
+}	
+
+.sizeText2{	
+    font-size: 0.9em;	
+}	
+
+.styleMarker1{	
+    list-style-type: disc;	
+}	
+
+.styleMarker2{	
+    list-style-type: circle;	
+}	
+
+.styleMarker3{	
+    list-style-type: square;	
+}
