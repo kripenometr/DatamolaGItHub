@@ -59,7 +59,6 @@ class MessageList{
             for(let i = 0; i < arrLocaleStorage.length; ++i){
                 let counter = arrLocaleStorage[i];
                 const newMess = new Message({text: counter._text, id: counter._id, createdAt: counter._createdAt, author: counter._author, isPersonal: counter._isPersonal, to: counter._to });
-                console.log("darova");
                 this._arr.push(newMess);
             }
         }
@@ -75,6 +74,15 @@ class MessageList{
 
     get getArrCollection(){
         return this._arr;
+    }
+
+    lengthArr(){
+        let size = 0;
+        for(let i of this.getArrCollection){
+            if(i !== undefined) ++size;
+        }
+
+        return size;
     }
 
     add(msg){
@@ -175,7 +183,7 @@ class MessageList{
 
         return ((substringText = "", substringAuthor = "", dateTo = new Date(), dateFrom = 0) => {
             let arrMessages1 = [];
-                
+            
             for(let counter of this._arr){
                 if(counter.getIsPersonal && counter.getAuthor !== this.getUser && counter.getTo !== this.getUser) continue;
                 if(    counter.getText.includes(substringText) 
@@ -186,7 +194,7 @@ class MessageList{
             }
 
             return arrMessages1;
-        })(text, author, dateTo, dateFrom).sort(function (a, b) { return a.getCreatedAt - b.getCreatedAt;}).slice(skip, skip + top);
+        })(text, author, dateTo, dateFrom).sort(function (a, b) { return a.getCreatedAt - b.getCreatedAt;}); // .slice(skip, skip + top)
     }
 
     save(arr){
@@ -277,6 +285,7 @@ class MessagesView{
 
     display(params) {
         document.getElementById(this.getId).innerText = ""; ///Доделать ещё кнопку загрузкi
+        //document.getElementById("messageBox").innerHTML = `<div class="load_more"><p>Выйти</p></div>`;
         
         const newMessageBox = new DocumentFragment();
         const insert = document.getElementById(this.getId);
@@ -443,19 +452,13 @@ class PersonalUsersView{
 class ChatController{
     constructor(){
         this.messageList = new MessageList();
-        this.userList = new UserList();//["Masha", "Misha", "Petia", "Vasia"], ["Misha", "Petia", "Vasia"]
+        this.userList = new UserList();
         //||||| Модели
 
         this.headerView = new HeaderView("nameUser");
         this.messagesView = new MessagesView("messageBox");
         this.activeUsersView = new ActiveUsersView("listOfUsers");
         //|||||| VIEW CLASSES
-
-        //Для работы с фильтрами
-
-        this.skipMess;
-        this.size;
-        this.checkSize = this.getMessageList.getArrCollection.length; 
     }
 
     get getMessageList(){
@@ -518,6 +521,7 @@ class ChatController{
     showMessages(skip, top, filterConfig){
         
         this.messagesView.display(this.messageList.getPage(skip, top, filterConfig));
+        
     }
 
     showActiveUsers(){
@@ -722,7 +726,7 @@ let pageMain = `<div class="main">
                         <div class="name_chat">
 
                             <p>Datamola Chat</p>
-                            <p class="number_in_the_network">6 участников, 5 в сети</p>
+                            <p class="number_in_the_network">** участников, ** в сети</p>
 
                         </div>
 
@@ -938,7 +942,7 @@ function main() {
         if(filter22.classList.contains("icon_filter_22")){
             filter22.classList.remove("icon_filter_22");
             filter22.classList.add("displayNone2");
-            document.getElementById("textFilter").innerHTML = ` <input type="date" value="2020-04-10" min="2019-12-12" class="date" id="dateInput">`;
+            document.getElementById("textFilter").innerHTML = `<input type="date" value="2020-04-10" min="2019-12-12" class="date" id="dateInput">`;
 
 
             if(filter11.classList.contains("displayNone1")){
@@ -974,24 +978,26 @@ function main() {
     const filtration = document.getElementById("iconSearch");
 
     filtration.addEventListener("click", event =>{
+        if(document.getElementById("iconFilter11") || document.getElementById("iconFilter33")){
+            let textFilter = document.getElementById("textFilter").childNodes[0].value;
+            
+            if(textFilter === "" || textFilter === undefined) return;
 
-        let textFilter = document.getElementById("filterText").value;
+            document.getElementById("textFilter").childNodes[0].value = "";
 
-        if(textFilter === "" || textFilter === undefined) return;
+            //document.getElementById("messageBox").innerHTML = `<div class="load_more"><p>Загрузить ещё</p></div>`;
+            
+            if(filter11.classList.contains("displayNone1")){
+                chatController.showMessages(0, 10, {author: textFilter});
+            }
+            
+            if(filter22.classList.contains("displayNone2")){
+                chatController.showMessages(0, 10, {dateFrom: new Date(textFilter).getTime(), dateTo: new Date(textFilter).getTime() + 86400000});
+            }
 
-        document.getElementById("filterText").value = "";
-
-        document.getElementById("messageBox").innerHTML = "";
-        
-        if(filter11.classList.contains("displayNone1")){
-            chatController.showMessages(0, 10, {author: textFilter});
-        }
-
-        if(filter22.classList.contains("displayNone2"));
-            //chatController.showMessages(0, 10, {: textFilter})
-
-        if(filter33.classList.contains("displayNone3")){
-            chatController.showMessages(0, 10, {text: textFilter});
+            if(filter33.classList.contains("displayNone3")){
+                chatController.showMessages(0, 10, {text: textFilter});
+            }
         }
     });
 
