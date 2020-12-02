@@ -194,7 +194,7 @@ class MessageList{
             }
 
             return arrMessages1;
-        })(text, author, dateTo, dateFrom).sort(function (a, b) { return a.getCreatedAt - b.getCreatedAt;}); // .slice(skip, skip + top)
+        })(text, author, dateTo, dateFrom).sort(function (a, b) { return a.getCreatedAt - b.getCreatedAt;}).slice(-10); // .slice(skip, skip + top)
     }
 
     save(arr){
@@ -283,12 +283,14 @@ class MessagesView{
         return this._arrDate;
     }
 
-    display(params) {
+    display(params, filterBoolean) {
         document.getElementById(this.getId).innerText = ""; ///Доделать ещё кнопку загрузкi
-        //document.getElementById("messageBox").innerHTML = `<div class="load_more"><p>Выйти</p></div>`;
+        //document.getElementById("messageBox").innerHTML = `<div class="load_more"><p>Вернуться к списку сообщений</p></div>`;
         
         const newMessageBox = new DocumentFragment();
         const insert = document.getElementById(this.getId);
+        if(filterBoolean)
+            insert.innerHTML = `<div class="breakMessList" id="breakMessageList"><p>Вернуться к списку сообщений</p></div>`;
         
         params.forEach(item =>{
             if(item.getAuthor === chatController.getMessageList.getUser){
@@ -518,9 +520,9 @@ class ChatController{
         return false;
     }
 
-    showMessages(skip, top, filterConfig){
+    showMessages(skip, top, filterConfig, filterBoolean){
         
-        this.messagesView.display(this.messageList.getPage(skip, top, filterConfig));
+        this.messagesView.display(this.messageList.getPage(skip, top, filterConfig), filterBoolean);
         
     }
 
@@ -978,27 +980,32 @@ function main() {
     const filtration = document.getElementById("iconSearch");
 
     filtration.addEventListener("click", event =>{
-        if(document.getElementById("iconFilter11") || document.getElementById("iconFilter33")){
             let textFilter = document.getElementById("textFilter").childNodes[0].value;
+            console.log(document.getElementById("textFilter").childNodes[1]);
             
             if(textFilter === "" || textFilter === undefined) return;
 
             document.getElementById("textFilter").childNodes[0].value = "";
 
-            //document.getElementById("messageBox").innerHTML = `<div class="load_more"><p>Загрузить ещё</p></div>`;
             
             if(filter11.classList.contains("displayNone1")){
-                chatController.showMessages(0, 10, {author: textFilter});
+                chatController.showMessages(0, 10, {author: textFilter}, true);
             }
             
             if(filter22.classList.contains("displayNone2")){
-                chatController.showMessages(0, 10, {dateFrom: new Date(textFilter).getTime(), dateTo: new Date(textFilter).getTime() + 86400000});
+                chatController.showMessages(0, 10, {dateFrom: new Date(textFilter).getTime(), dateTo: new Date(textFilter).getTime() + 86400000}, true);
             }
 
             if(filter33.classList.contains("displayNone3")){
-                chatController.showMessages(0, 10, {text: textFilter});
+                chatController.showMessages(0, 10, {text: textFilter}, true);
             }
-        }
+
+        const mesListBreak =  document.getElementById("breakMessageList");
+
+        mesListBreak.addEventListener("click", event => {
+            document.getElementById("breakMessageList").remove();
+            chatController.showMessages();
+        });
     });
 
 
