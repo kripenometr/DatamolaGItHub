@@ -285,7 +285,6 @@ class MessagesView{
 
     display(params, filterBoolean) {
         document.getElementById(this.getId).innerText = ""; ///Доделать ещё кнопку загрузкi
-        //document.getElementById("messageBox").innerHTML = `<div class="load_more"><p>Вернуться к списку сообщений</p></div>`;
         
         const newMessageBox = new DocumentFragment();
         const insert = document.getElementById(this.getId);
@@ -981,7 +980,6 @@ function main() {
 
     filtration.addEventListener("click", event =>{
             let textFilter = document.getElementById("textFilter").childNodes[0].value;
-            console.log(document.getElementById("textFilter").childNodes[1]);
             
             if(textFilter === "" || textFilter === undefined) return;
 
