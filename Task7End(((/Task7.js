@@ -1,245 +1,3 @@
-class Message{
-    constructor(msg){
-        this._id = msg.id;
-        this._text = msg.text;
-        if(msg.createdAt)
-            this._createdAt = new Date(msg.createdAt);  //// переделанно из-за localstorage
-        else
-            this._createdAt = new Date();
-
-        this._author = msg.author;
-        this._isPersonal = msg.isPersonal || !!msg.to;
-        this._to = msg.to;
-    }
-
-    get getId(){
-        return this._id;
-    }
-
-    get getCreatedAt(){
-        return this._createdAt;
-    }
-
-    get getAuthor(){
-        return this._author;
-    }        
-
-    get getText(){
-        return this._text;
-    }   
-    
-    set setText(text){
-        this._text = text;
-    }   
-    
-    get getIsPersonal(){
-        return this._isPersonal;
-    }
-
-    set setIsPersonal(isPersonal){
-        this._isPersonal = isPersonal;
-    }
-    
-    get getTo(){
-        return this._to;
-    }    
-
-    set setTo(to){
-        this._to = to;
-    }
-}
-
-class MessageList{    
-    _user;
-    _arr = [];
-
-    constructor(){
-        let arrLocaleStorage = this.restore();
-        if(arrLocaleStorage){
-            for(let i = 0; i < arrLocaleStorage.length; ++i){
-                let counter = arrLocaleStorage[i];
-                const newMess = new Message({text: counter._text, id: counter._id, createdAt: counter._createdAt, author: counter._author, isPersonal: counter._isPersonal, to: counter._to });
-                this._arr.push(newMess);
-            }
-        }
-    }
-
-    get getUser(){
-        return this._user;
-    }
-
-    set setUser(user){
-        this._user = user;
-    }
-
-    get getArrCollection(){
-        return this._arr;
-    }
-
-    lengthArr(){
-        let size = 0;
-        for(let i of this.getArrCollection){
-            if(i !== undefined) ++size;
-        }
-
-        return size;
-    }
-
-    add(msg){
-        if(this.getUser !== undefined && this.getUser !== ""){
-            const newMessage = new Message(msg);
-            if(MessageList.validate(newMessage)){
-                this._arr.push(newMessage);
-                this.save(this.getArrCollection);
-                return true;
-            }
-        }
-
-        return false;    
-    }
-
-    get(id){
-        return this._arr.find(counter => counter.getId === id);  
-    }
-
-    remove(id){
-        let message = this.get(id);
-
-        if(message.getAuthor === this.getUser) {
-            this._arr.splice(this._arr.indexOf(message), 1);
-            this.save(this.getArrCollection);
-            return true;
-        }
-
-        return false;
-    }
-
-    edit(id, msg){
-        let message = this.get(id);
-
-        if(message.getAuthor === this.getUser) {
-            let check, check1, check2;
-
-            if(check = msg.hasOwnProperty("text") && typeof(msg.text) === "string" && msg.text.length <= 200) 
-                message.setText = msg.text;
-
-            if(check1 = msg.hasOwnProperty("isPersonal") && typeof(msg.isPersonal) === "boolean")
-                message.setIsPersonal = msg.isPersonal;
-
-            if(check2 = msg.hasOwnProperty("to") && typeof(msg.to) === "string" && msg.to !== "")                        
-                message.setTo = msg.to;
-
-            this.save(this.getArrCollection);
-
-            return Boolean(check + check1 + check2);
-        }
-
-        return false;
-    }
-
-    static validate(msg){
-        return msg.hasOwnProperty("_id")
-            && msg.hasOwnProperty("_text")
-            && msg.hasOwnProperty("_createdAt")
-            && msg.hasOwnProperty("_author")
-            && msg.getText.length <= 200                      
-            && msg.getAuthor !== ""
-            && typeof(msg.getId) === "string"
-            && typeof(msg.getText) === "string"
-            && typeof(msg.getAuthor) === "string"
-            && typeof(msg.getCreatedAt) === "object";
-    }
-
-    addAll(arr){
-        let noValidateMessages = [];
-
-        for(let counter of arr)
-            MessageList.validate(counter) ? this._arr.push(counter) : noValidateMessages.push(counter);
-
-        return noValidateMessages;
-    }
-
-    clear(){
-        this.getArrCollection = [];
-        this.save(this.getArrCollection);
-    }
-
-    getPage(skip = 0, top = 10, filterConfig = undefined){
-        let author, text, dateTo, dateFrom;
-
-        if(filterConfig != undefined){
-            if(filterConfig.hasOwnProperty("author") && filterConfig.author !== "")
-                author = filterConfig.author;
-
-            if(filterConfig.hasOwnProperty("text") && filterConfig.text.length <= 200)
-                text = filterConfig.text;
-
-            if(filterConfig.hasOwnProperty("dateTo"))
-                dateTo = filterConfig.dateTo;
-
-            if(filterConfig.hasOwnProperty("dateFrom"))
-                dateFrom = filterConfig.dateFrom; 
-        }
-
-        return ((substringText = "", substringAuthor = "", dateTo = new Date(), dateFrom = 0) => {
-            let arrMessages1 = [];
-            
-            for(let counter of this._arr){
-                if(counter.getIsPersonal && counter.getAuthor !== this.getUser && counter.getTo !== this.getUser) continue;
-                if(    counter.getText.includes(substringText) 
-                    && counter.getAuthor.includes(substringAuthor) 
-                    && counter.getCreatedAt <= dateTo 
-                    && counter.getCreatedAt >= dateFrom)  
-                    arrMessages1.push(counter);
-            }
-
-            return arrMessages1;
-        })(text, author, dateTo, dateFrom).sort(function (a, b) { return a.getCreatedAt - b.getCreatedAt;}).slice(-10); // .slice(skip, skip + top)
-    }
-
-    save(arr){
-        localStorage.setItem("ArrayMessages", JSON.stringify(arr));
-    }
-
-    restore(){
-        return JSON.parse(localStorage.getItem("ArrayMessages"));
-    }
-}
-
-
-class UserList{
-    _users = [];
-    _activeUsers = [];
-
-    constructor(){
-        this._users = this.restore();
-        this._activeUsers = this.restore();
-    }
-
-    get getUsers(){
-        return this._users;
-    }
-
-    get getActiveUsers(){
-        return this._activeUsers;
-    }
-
-    newUser(name){
-        this._users.push(name);
-        this._activeUsers.push(name);
-        
-        this.save(this.getUsers);
-    }
-
-    save(arr){
-        localStorage.setItem("ArrayUsers", JSON.stringify(arr));
-    }
-
-    restore(){
-        return JSON.parse(localStorage.getItem("ArrayUsers"));
-    }
-}
-
 class HeaderView{
     constructor(containerId){
         this._id = containerId;
@@ -253,8 +11,7 @@ class HeaderView{
         const insertName = document.getElementById(this.getId);
         const insertInput = document.getElementById("writeMessage");
         const iconExit = document.querySelector(".icon_entrance");
-
-        insertName.innerText = "";
+ 
         insertName.innerText = params;
 
         insertInput.innerHTML = `<input name="textInputMessage" type="text" id="textInput" placeholder="Написать сообщение" class="inputMessageStyle">`;
@@ -264,8 +21,6 @@ class HeaderView{
         iconExit.classList.add("icon_exit");
         iconExit.innerHTML = `<span class="iconify" data-inline="false" data-icon="fa-solid:sign-out-alt" style="width: 35px; height: 33px; color: #606d7d;"></span>
                               <p id="textExitEntrance">Выйти</p>`;
-        
-        
     }
 }
 
@@ -284,31 +39,78 @@ class MessagesView{
     }
 
     display(params, filterBoolean) {
-        document.getElementById(this.getId).innerText = ""; ///Доделать ещё кнопку загрузкi
+        document.getElementById(this.getId).innerText = ""; 
         
         const newMessageBox = new DocumentFragment();
         const insert = document.getElementById(this.getId);
-        if(filterBoolean)
-            insert.innerHTML = `<div class="breakMessList" id="breakMessageList"><p>Вернуться к списку сообщений</p></div>`;
-        
+
+        if(filterBoolean){
+            clearInterval(viewMess);
+            insert.innerHTML = `<div class="breakMessList" id="breakMessageList"><p>Вернуться к списку сообщений</p></div> <div class="loadMore1" id="loadMoreMess1"><p>Загрузить ещё</p></div>`;
+
+            const mesListBreak =  document.getElementById("breakMessageList");
+
+            const loadMore1 = document.getElementById("loadMoreMess1");
+
+            loadMore1.addEventListener("click", event => {
+
+                topPag += 10;
+                chatController.showMessages(filterConfigLoadMore, true);
+
+            });
+
+            mesListBreak.addEventListener("click", event => {
+                topPag = 10;
+                document.getElementById("breakMessageList").remove();
+                chatController.showMessages();
+
+                viewMess = setInterval(() =>{
+                    chatApiService.getMessages().then((res) => {
+                        if(lastMess.id !== res[0].id || lastMess.text !== res[0].text){
+                            chatController.showMessages();
+                        }
+                    })
+                }, 5000);
+            });
+        }
+        else{
+            insert.innerHTML = `<div class="loadMore" id="loadMoreMess"><p>Загрузить ещё</p></div>`;
+
+            const loadMore =  document.getElementById("loadMoreMess");
+
+            loadMore.addEventListener("click", event => {
+
+                document.getElementById("loadMoreMess").remove();
+                topPag += 10;
+                chatController.showMessages();
+            });
+        }
+
+        lastMess = params[0];
+        params.reverse();
         params.forEach(item =>{
-            if(item.getAuthor === chatController.getMessageList.getUser){
+            if(item.author === chatController.userName){
+                let maxDate = new Date(item.createdAt);
+                let isoDate = maxDate.toISOString(); 
+                item.createdAt = new Date(isoDate);
+
+
                 let newDiv = document.createElement("div");
                 newDiv.classList.add("message_my");
-                newDiv.id = item.getId;
+                newDiv.id = item.id;
                 newMessageBox.appendChild(newDiv);
 
                 const newDiv1 = document.createElement("div");
                 newDiv1.classList.add("user_messages_my");
                 newDiv.appendChild(newDiv1);
-                
+    
 
                 let newDiv2 = document.createElement("div");
                 newDiv2.classList.add("color_name_my");
                 newDiv1.appendChild(newDiv2);
 
                 let newP = document.createElement("p");
-                item.getIsPersonal ? newP.innerText = `Я для ${item.getTo}` :  newP.innerText = `Я`;
+                item.isPersonal ? newP.innerText = `Я для ${item.to}` :  newP.innerText = `Я`;
                 newDiv2.appendChild(newP);
                 
                 
@@ -319,30 +121,35 @@ class MessagesView{
 
                 newDiv2 = document.createElement("div");
                 newDiv2.classList.add("icon_delete");
+                newDiv2.id = "delete12";
                 newDiv2.innerHTML = ` <span class="iconify" data-inline="false" data-icon="ic:baseline-delete" style="width: 35px; height: 20px; color:  #606d7d;"></span>`;
                 newDiv1.appendChild(newDiv2);
                 
                 newP = document.createElement("p");
-                newP.innerText = item.getText;
+                newP.innerText = item.text;
                 newP.classList.add("text_my");
                 newDiv.appendChild(newP);
 
                 newP = document.createElement("p");
-                newP.innerText = `${item.getCreatedAt.getHours()}:${item.getCreatedAt.getMinutes() < 10 ? "0" + item.getCreatedAt.getMinutes() : item.getCreatedAt.getMinutes()}, ${item.getCreatedAt.getDate()} ${this.getArrDate[item.getCreatedAt.getMonth()]}`;
+                newP.innerText = `${item.createdAt.getHours()}:${item.createdAt.getMinutes() < 10 ? "0" + item.createdAt.getMinutes() : item.createdAt.getMinutes()}, ${item.createdAt.getDate()} ${this.getArrDate[item.createdAt.getMonth()]}`;
                 newP.classList.add("time_data_my");
                 newDiv.appendChild(newP);
             }
             else{
+                let maxDate = new Date(item.createdAt);
+                let isoDate = maxDate.toISOString(); 
+                item.createdAt = new Date(isoDate);
+
                 const newDiv = document.createElement("div");
                 newDiv.classList.add("message");
-                newDiv.id = item.getId;
+                newDiv.id = item.id;
     
                 const newDiv1 = document.createElement("div");
                 newDiv1.classList.add("icon_user_at_message");
                 newDiv1.innerHTML = `<span class="iconify" data-inline="false" data-icon="fa-solid:male" style="width: 20px; height: 35px; color: #606d7d;"></span>`;
 
                 const newDiv2 = document.createElement("div");
-                if(item.getIsPersonal && item.getTo === chatController.getMessageList.getUser)
+                if(item.isPersonal && item.to === chatController.userName)
                     newDiv2.classList.add("UserMessagesBackColorIsPersonal");
                 else
                     newDiv2.classList.add("user_messages");
@@ -352,23 +159,23 @@ class MessagesView{
                 newDiv.appendChild(newDiv2);
 
                 let newP = document.createElement("p");
-                if(item.getIsPersonal && item.getTo === chatController.getMessageList.getUser){
-                    newP.innerText = `Мне, от ${item.getAuthor}`;
+                if(item.isPersonal && item.to === chatController.userName){
+                    newP.innerText = `Мне, от ${item.author}`;
                     newP.classList.add("colorNameIsPesonal");        
                 }
                 else{
-                    newP.innerText = item.getAuthor;
+                    newP.innerText = item.author;
                     newP.classList.add("color_name");
                 }
                 newDiv2.appendChild(newP);
 
                 newP = document.createElement("p");
-                newP.innerText = item.getText;
+                newP.innerText = item.text;
                 newP.classList.add("text");
                 newDiv2.appendChild(newP);
 
                 newP = document.createElement("p");
-                newP.innerText = `${item.getCreatedAt.getHours()}:${item.getCreatedAt.getMinutes() < 10 ? "0" + item.getCreatedAt.getMinutes() : item.getCreatedAt.getMinutes()}, ${item.getCreatedAt.getDate()} ${this.getArrDate[item.getCreatedAt.getMonth()]}`;
+                newP.innerText = `${item.createdAt.getHours()}:${item.createdAt.getMinutes() < 10 ? "0" + item.createdAt.getMinutes() : item.createdAt.getMinutes()}, ${item.createdAt.getDate()} ${this.getArrDate[item.createdAt.getMonth()]}`;
                 newP.classList.add("time_data");
                 newDiv2.appendChild(newP);
             }
@@ -378,7 +185,7 @@ class MessagesView{
     }
 }
 
-class ActiveUsersView{     //Работает по сути и для не активных пользователей, сделай потом после каждого действия отображение пользователей(мол если кто-то зашел);
+class ActiveUsersView{
     constructor(containerId){
         this._id = containerId;
     }
@@ -390,9 +197,10 @@ class ActiveUsersView{     //Работает по сути и для не ак�
     display(params) {
         const newUsersBox = new DocumentFragment();
         const insert = document.getElementById(this.getId);
-    
+        insert.innerHTML = "";
+
         for(let item of params){
-            if(item === chatController.messageList.getUser) continue;
+            if(item.name === chatController.userName) continue;
 
             const newDiv = document.createElement("div");
             newDiv.classList.add("user");
@@ -408,7 +216,7 @@ class ActiveUsersView{     //Работает по сути и для не ак�
             newDiv.appendChild(newDiv1);
 
             const newP = document.createElement("p");
-            newP.innerText = item;
+            newP.innerText = item.name;
             newDiv1.appendChild(newP);
 
             newDiv1 = document.createElement("div");
@@ -452,213 +260,377 @@ class PersonalUsersView{
 
 class ChatController{
     constructor(){
-        this.messageList = new MessageList();
-        this.userList = new UserList();
-        //||||| Модели
-
         this.headerView = new HeaderView("nameUser");
         this.messagesView = new MessagesView("messageBox");
         this.activeUsersView = new ActiveUsersView("listOfUsers");
-        //|||||| VIEW CLASSES
+
+        this.userName = "";
+        this.userToken = "";
+        this.arrUsers = [];
+        this.arrMess = [];
     }
 
-    get getMessageList(){
-        return this.messageList;
+    get getUserToken(){
+        return this._userToken;
     }
 
-    get getUserList(){
-        return this.userList;
+    set setUserToken(userTok){
+        this._userToken = userTok;
     }
 
-    get getHeaderView(){
-        return this.headerView;
-    }
-
-    get getMessagesView(){
-        return this.messagesView;
-    }
-
-    setCurrentUser(user){
-        if(user !== undefined && user !== ""){
-            if(this.userList.getUsers.find(counter => counter === user) === undefined){  
-                this.userList.getActiveUsers.push(user);
-                this.userList.getUsers.push(user);
-            }
-            
-            this.messageList.setUser = user;
-    
-            this.headerView.display(user);
-            this.showMessages();
-        }
+    setCurrentUser(userNameView){
+        body.innerHTML = pageMain;
+        this.headerView.display(userNameView);
+        this.showUsers();
+        this.showMessages();
+        main();
     }
 
     addMessage(msg){
-        if(this.messageList.add({id: String(generatorId()), text: msg.text, author: this.messageList.getUser, isPersonal: msg.isPersonal, to: msg.to})){
-            this.showMessages();
-            return true;
-        }
+        msg.author = chatController.userName;
         
-        return false;
+        chatApiService.postMessages(msg)
+        .then(() => {
+            return chatApiService.getMessages()
+        })
+        .then((resArrMessages) => {
+            this.arrMess = [];  
+            for(let counter of resArrMessages){
+                this.arrMess.push({id: counter.id, text: counter.text, createdAt: counter.createdAt, author: counter.author, isPersonal: counter.isPersonal, to: counter.to});
+            }
+        })
+        .then(() => {
+            this.showMessages();
+        })
+
     }
 
     editMessage(id, msg){
-        if(this.messageList.edit(id, msg)){
+        chatApiService.putMessages(id, msg).then(() => {
             this.showMessages();
-            return true;
-        }
-        
-        return false;
+        });
     }
 
     removeMessage(id){
-        if(this.messageList.remove(id)){
+        chatApiService.delMessages(id).then(() => {
             this.showMessages();
-            return true;
-        }
-    
-        return false;
+        });  
     }
 
-    showMessages(skip, top, filterConfig, filterBoolean){
-        
-        this.messagesView.display(this.messageList.getPage(skip, top, filterConfig), filterBoolean);
-        
+    showMessages(filterConfig, filterBoolean){
+        chatApiService.getMessages(filterConfig)
+        .then((resArrMessages) => {
+            this.arrMess = [];  
+            for(let counter of resArrMessages){
+                this.arrMess.push({id: counter.id, text: counter.text, createdAt: counter.createdAt, author: counter.author, isPersonal: counter.isPersonal, to: counter.to});
+            }
+        })
+        .then(() => {
+            this.messagesView.display(this.arrMess, filterBoolean);
+        });
     }
 
-    showActiveUsers(){
-        this.activeUsersView.display(this.userList.getActiveUsers); 
+    showUsers(){
+        chatApiService.getUserses()
+        .then(resArrUsers => {
+            this.arrUsers = [];
+            for(let item of resArrUsers){
+                if(item.isActive) 
+                    this.arrUsers.push(item);
+            }
+        
+            if(this.arrUsers.length !== lengthUsers){
+                lengthUsers = this.arrUsers.length;
+                return true;
+            }
+            
+            return false;
+        })
+        .then((Bool) => {
+            if(Bool)
+                this.activeUsersView.display(this.arrUsers); 
+        });
     }
 
     authorization(){
-        body.innerHTML = "";
         body.innerHTML = pageEntrance;
 
         const home = document.getElementById("iconBreakEntrance");
         home.addEventListener("click", event => {
-            
             document.location.reload();
         });
 
         const submitEntrance = document.getElementById("submitEntrance");
         submitEntrance.addEventListener("click", event => {
+            event.preventDefault();
+
             let login = document.querySelector(".loginStyle").value;
-            if(!login) return;// Здесь доделать вид "Введенные данные не корректны"
-            //let password = document.querySelector(".passwordStyle").value;;
+                                                                        //if(!login) return; Здесь доделать вид "Введенные данные не корректны"
+            let password = document.querySelector(".passwordStyle").value;
+
+            chatApiService.postLogin(login, password)
+            .then(res => {
+                if(res.token){
+                    chatController.userName = login;
+                    chatController.setUserToken = res.token;
+                    chatController.setCurrentUser(login);   
+                }
+                else{
+                    body.insertAdjacentHTML("afterbegin", ` <div class="backgroundLogPass">
+                                                                <div class="breakIcon" id="conteinerDel">
+                                                                <div class="iconCross" id="crossIcon">
+                                                                    <span class="iconify" data-inline="false" data-icon="raphael:cross" style="font-size: 24px; color: #606D7D;"></span>
+                                                                </div>
+                                                                
+                                                                <div class="textLogPass">
+                                                                    <p>Введенные вами данные некорректны</p>
+                                                                </div>
+                                                        
+                                                            </div>`);   
+                    document.getElementById("crossIcon").addEventListener("click", event =>{
+                        chatController.authorization();
+                    })
+                }
+            }); 
             
-            body.innerHTML = "";
-            body.innerHTML = pageMain;
-        
-            chatController.setCurrentUser(login);   
-            chatController.showActiveUsers();
-        
-                main();
-            });
+        });
 
         const checkIn = document.getElementById("buttonCheckIn");
-
         checkIn.addEventListener("click", chatController.checkIn);
     }
 
     checkIn(){
-        body.innerHTML = "";
         body.innerHTML = pageCheckIn;
+        
 
         const home = document.getElementById("iconBreakEntrance");
-
         home.addEventListener("click", event => {
-            
             chatController.authorization();
         });
 
         const buttonCheckIn = document.getElementById("checkIn");
-
         buttonCheckIn.addEventListener("click", event =>{
-            let login = document.getElementById("loginCheckIn").value;
-            //let password1 = document.getElementById("password1CheckIn").value;
-            //let password2 = document.getElementById("password2CheckIn").value;
-        
-            chatController.getUserList.newUser(login);
+            event.preventDefault();
 
-            chatController.authorization();
+            let login = document.getElementById("loginCheckIn").value;
+            let password1 = document.getElementById("password1CheckIn").value;
+            let password2 = document.getElementById("password2CheckIn").value;
+            if(password1 === password2){
+                chatApiService.postRegister(login, password1).then(res => {
+
+                    if(res === "OK"){
+                        chatController.authorization();
+                    }
+                    else{
+                        body.insertAdjacentHTML("afterbegin", ` <div class="backgroundLogPass">
+                                                                    <div class="breakIcon" id="conteinerDel">
+                                                                    <div class="iconCross" id="crossIcon">
+                                                                        <span class="iconify" data-inline="false" data-icon="raphael:cross" style="font-size: 24px; color: #606D7D;"></span>
+                                                                    </div>
+                                                                    
+                                                                    <div class="textLogPass">
+                                                                        <p>Введенный вами логин или пароль уже существует</p>
+                                                                    </div>
+                                                                
+                                                                </div>`);   
+                        document.getElementById("crossIcon").addEventListener("click", event =>{
+                            chatController.checkIn();
+                        })
+                        
+                    }
+                });
+           }
+           else{
+                body.insertAdjacentHTML("afterbegin", ` <div class="backgroundLogPass">
+                                                            <div class="breakIcon" id="conteinerDel">
+                                                            <div class="iconCross" id="crossIcon">
+                                                                <span class="iconify" data-inline="false" data-icon="raphael:cross" style="font-size: 24px; color: #606D7D;"></span>
+                                                            </div>
+                                                            
+                                                            <div class="textLogPass">
+                                                                <p>Пароли не совпадают</p>
+                                                            </div>
+                                                    
+                                                        </div>`);   
+                document.getElementById("crossIcon").addEventListener("click", event =>{
+                    chatController.checkIn();
+                })
+            }
         });
     }
 }
 
-let generator = localStorage.getItem("GeneratorID");
-function generatorId() {
-    generator++;
-    localStorage.setItem("GeneratorID", generator);
+class ChatApiService{
+    constructor(url){
+        this.url = url;
+    }
     
-    return generator;
-}
+    get getUrl(){
+        return this.url;
+    }
 
-function localeStorageAdd() {
-    if(!localStorage.getItem("ArrayUsers") && !localStorage.getItem("ArrayMessages")){
-        localStorage.setItem("ArrayMessages", JSON.stringify([
-            {
-                _id: "b2c125c0-4d1e-4053-a6ec-ec12c75498d0",
-                _text: "Привет всем!!!",
-                _createdAt: new Date("2020-10-10T13:40:00"),
-                _author: "Саша Петров",
-                _isPersonal: false
-            },
-        
-            {
-                _id: "4bce6883-ece4-4c95-9ea2-74feb450bc4c",
-                _text: "Привет)",
-                _createdAt: new Date("2020-10-10T13:42:00"),
-                _author: "Катя Смирнова",
-                _isPersonal: true,
-                _to: "Ваня Козлов"
-            },
-        
-            {
-                _id: "f3995ca2-2315-4ee4-8190-47e899dc5f2a",
-                _text: "Приветики)",
-                _createdAt: new Date("2020-10-10T13:45:00"),
-                _author: "Коля Сидоров",
-                _isPersonal: false
-            },
-        
-            {
-                _id: "f59aeec5-be08-4cbf-996a-f47bf5c2af94",
-                _text: "Доброе утро",
-                _createdAt: new Date("2020-10-10T13:50:00"),
-                _author: "Ваня Козлов",
-                _isPersonal: false
-            },
-        
-            {
-                _id: "8d638c7e-6d75-4eaf-a401-c0958b916bfc",
-                _text: "Начинаем работать",
-                _createdAt: new Date("2020-10-10T13:55:00"),
-                _author: "Катя Смирнова",
-                _isPersonal: false
-            },
-        
-            {
-                _id: "9c45fc5d-f3bb-4858-b1ab-85dff5896463",
-                _text: "Что будем делать?",
-                _createdAt: new Date("2020-10-10T14:00:00"),
-                _author: "Ваня Козлов",
-                _isPersonal: false
-            },
-        
-            {
-                _id: "1f0725aa-281b-4220-a38c-3a95f7ea368d",
-                _text: "Сегодня будем создавать калькулятор на JS)",
-                _createdAt: new Date("2020-10-10T14:10:00"),
-                _author: "Катя Смирнова",
-                _isPersonal: false
-            }]));
-    
-        localStorage.setItem("ArrayUsers", JSON.stringify(["Masha", "Misha", "Petia", "Vasia"]));
+    getMessages(filterConfig){
+        var myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${chatController.getUserToken}`);
 
-        localStorage.setItem("GeneratorID", 0);
+        var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow'
+        };
+        let typeFilterConfig1, typeFilterConfig2;
+        let valueFilterConfig1, valueFilterConfig2;
+        let variable;
+
+        if(filterConfig){
+            if(Object.keys(filterConfig).length === 1){
+                typeFilterConfig1 = String(Object.keys(filterConfig));
+                valueFilterConfig1 = String(Object.values(filterConfig));
+                variable = 1;
+            }
+            else{
+                typeFilterConfig1 = Object.keys(filterConfig)[0];
+                typeFilterConfig2 = Object.keys(filterConfig)[1];
+                valueFilterConfig1 = String(Object.values(filterConfig)[0]);
+                valueFilterConfig2 = String(Object.values(filterConfig)[1]);
+                variable = 0;
+            }     
+        }
+        
+        return fetch(`${this.getUrl}messages?skip=${skipPag}&top=${topPag}${variable === 1 ? `&${typeFilterConfig1}=${valueFilterConfig1}` : variable === 0 ? `&${typeFilterConfig1}=${valueFilterConfig1}&${typeFilterConfig2}=${valueFilterConfig2}` : ""}`, requestOptions)
+        .then(response => response.text())
+        .then(result => JSON.parse(result))
+        .catch(error => chatApiService.errorPage(error));
+    }
+
+    postMessages(msg){
+        var myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${chatController.getUserToken}`);
+        myHeaders.append("Content-Type", "application/json");
+
+        var raw = JSON.stringify({"text": msg.text,"isPersonal": msg.isPersonal,"to": msg.to,"author": msg.author});
+
+        var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+        };
+
+        return fetch(`${this.getUrl}messages`, requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+    }
+
+    putMessages(idMess, msg){
+        var myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${chatController.getUserToken}`);
+        myHeaders.append("Content-Type", "application/json");
+
+        var raw = JSON.stringify({"text": msg.text, "isPersonal": msg.isPersonal, "to": msg.to});
+
+        var requestOptions = {
+        method: 'PUT',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+        };
+
+        return fetch(`${this.getUrl}messages/${idMess}`, requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+    }
+
+    delMessages(idMess){
+        var myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${chatController.getUserToken}`);
+
+        var requestOptions = {
+        method: 'DELETE',
+        headers: myHeaders,
+        redirect: 'follow'
+        };
+
+        return fetch(`${this.getUrl}messages/${idMess}`, requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+    }
+
+    postRegister(name, pass){
+        var formdata = new FormData();
+        formdata.append("name", name);
+        formdata.append("pass", pass);
+        
+        var requestOptions = {
+          method: 'POST',
+          body: formdata,
+          redirect: 'follow'
+        };
+        
+        return fetch(`${this.getUrl}auth/register`, requestOptions)
+          .then(response => response.text())
+          .then(result => result)
+          .catch(error => console.log('error', error));
+    }
+
+    postLogin(name, pass){
+        var formdata = new FormData();
+        formdata.append("name", name);
+        formdata.append("pass", pass);
+
+        var requestOptions = {
+        method: 'POST',
+        body: formdata,
+        redirect: 'follow'
+        };
+
+        return fetch(`${this.getUrl}auth/login`, requestOptions)
+        .then(response => response.text())
+        .then(result => JSON.parse(result))
+        .catch(error => console.log('error', error));
+    }
+
+    postLogout(){
+        var myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${chatController.getUserToken}`);
+
+        var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        redirect: 'follow'
+        };
+
+        return fetch(`${this.getUrl}auth/logout`, requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+    }
+
+    getUserses(){
+        var myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${chatController.getUserToken}`);
+
+        var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow'
+        };
+
+        return fetch("https://jslabdb.datamola.com/users", requestOptions)
+        .then(response => response.text())
+        .then(result => JSON.parse(result))
+        .catch(error => console.log('error', error));
+    }
+
+    errorPage(error){
+       
     }
 }
 
-localeStorageAdd();
+let chatApiService = new ChatApiService("https://jslabdb.datamola.com/");
 
 let chatController = new ChatController();
 
@@ -687,7 +659,7 @@ let pageEntrance = `<header class="headerPageEntrance">
                             Email: mihail_polivoda@mail.ru<br>
                             Версия 1.0 (09.10.2020)
                         </p>
-                    </footer>   `;
+            </footer>`;
 
 let pageMain = `<div class="main">
 
@@ -866,6 +838,43 @@ let pageCheckIn = `<header class="headerPageEntrance">
                         </p>
                     </footer>`;
 
+let pageError = `<header class="headerPageEntrance">
+                        <div class="iconBreak" id="iconBreakEntrance"> 
+                            <span class="iconify" data-inline="false" data-icon="fa-solid:home" style="font-size: 45px; color: #606D7D;"></span>
+                        </div>
+                        <div class="nameChat">
+                            <p>Datamola Chat</p>
+                        </div>
+                    </header>
+                    <div class="form1">
+                        <div class="conteinerCircleError">
+                            <div class="iconErr">
+                                <span class="iconify" data-inline="false" data-icon="si-glyph:document-error" style="font-size: 100px; color: #606D7D;"></span>
+                            </div>
+                            <div class="textErr">
+                                <p class="textError">НЕ УСПЕЛ ДОДЕЛАТЬ(((((</p>
+                            </div>
+                        
+                        </div>
+                    </div>
+
+                    <footer class="footerPageEntrance">
+                                <p class="styleFooter">Datamola Chat<br>
+                                    Автор: Поливода Михаил<br>
+                                    Email: mihail_polivoda@mail.ru<br>
+                                    Версия 1.0 (09.10.2020)
+                                </p>
+                    </footer>`;
+let lastMess, viewMess;
+
+let skipPag = 0, topPag = 10;
+
+let lengthUsers = 0; 
+
+let filterConfigLoadMore;
+
+let id;
+
 const body = document.querySelector("body");
 
 body.innerHTML = pageMain;
@@ -873,8 +882,6 @@ body.innerHTML = pageMain;
 const entrance = document.querySelector(".icon_entrance");
 
 entrance.addEventListener("click", chatController.authorization);
-
-let id;
 
 function main() {
     
@@ -906,7 +913,11 @@ function main() {
             }
             if(target.classList.contains("textDelete")){
                 question.remove();
-                document.location.reload();    
+                chatApiService.postLogout().then(() => {
+                    
+                    document.location.reload(); 
+                })
+                 
             }
         });
     });
@@ -943,7 +954,7 @@ function main() {
         if(filter22.classList.contains("icon_filter_22")){
             filter22.classList.remove("icon_filter_22");
             filter22.classList.add("displayNone2");
-            document.getElementById("textFilter").innerHTML = `<input type="date" value="2020-04-10" min="2019-12-12" class="date" id="dateInput">`;
+            document.getElementById("textFilter").innerHTML = `<input type="date" value="2020-12-01" min="2020-12-01" class="date" id="dateInput">`;
 
 
             if(filter11.classList.contains("displayNone1")){
@@ -985,28 +996,25 @@ function main() {
 
             document.getElementById("textFilter").childNodes[0].value = "";
 
+            topPag = 10;
             
             if(filter11.classList.contains("displayNone1")){
-                chatController.showMessages(0, 10, {author: textFilter}, true);
+                filterConfigLoadMore = {author: textFilter};
+                chatController.showMessages({author: textFilter}, true);
             }
             
             if(filter22.classList.contains("displayNone2")){
-                chatController.showMessages(0, 10, {dateFrom: new Date(textFilter).getTime(), dateTo: new Date(textFilter).getTime() + 86400000}, true);
+                filterConfigLoadMore = {dateFrom: textFilter, dateTo: textFilter};
+                chatController.showMessages({dateFrom: textFilter, dateTo: textFilter}, true);
             }
 
             if(filter33.classList.contains("displayNone3")){
-                chatController.showMessages(0, 10, {text: textFilter}, true);
+                filterConfigLoadMore = {text: textFilter};
+                chatController.showMessages({text: textFilter}, true);
             }
-
-        const mesListBreak =  document.getElementById("breakMessageList");
-
-        mesListBreak.addEventListener("click", event => {
-            document.getElementById("breakMessageList").remove();
-            chatController.showMessages();
-        });
+            
+        
     });
-
-
 
     /*Отправка сообщений */
     const mesDispatch = document.querySelector(".icon_dispatch")
@@ -1020,7 +1028,6 @@ function main() {
             document.getElementById("textInput").value = "";
             
             if(privateNameInput.placeholder === "Написать сообщение" && !document.getElementById("crossEdit")){
-                
                 chatController.addMessage({text: textMess, isPersonal: false});
             }
 
@@ -1040,7 +1047,11 @@ function main() {
             if(document.getElementById("crossEdit")){
                 document.getElementById("newEditIcon").remove();
                 document.getElementById("crossEdit").remove();
-                chatController.editMessage(id, {text: textMess});
+                
+                if(document.getElementById(id).children[0].children[0].children[0].innerText === "Я")
+                    chatController.editMessage(id, {text: textMess, isPersonal: false});
+                else
+                    chatController.editMessage(id, {text: textMess, isPersonal: true, to: document.getElementById(id).children[0].children[0].children[0].innerText.slice(6)});
             }
     });
             
@@ -1101,6 +1112,7 @@ function main() {
 
             const questionDeleteMes = document.getElementById("conteinerDel");
             questionDeleteMes.addEventListener("click", event =>{
+                event.preventDefault();
                 let target = event.target;
                 const question = document.querySelector(".styleDelete");
                 if(target.classList.contains("textBreak")){
@@ -1108,7 +1120,7 @@ function main() {
                 }
                 if(target.classList.contains("textDelete")){
                     question.remove();
-                    chatController.removeMessage(id);    
+                    chatController.removeMessage(id);
                 }
             });
         }
@@ -1133,7 +1145,7 @@ function main() {
             const textEditMessage = document.getElementById(`${id}`).querySelector(".text_my").innerText;
             textEdit.value = textEditMessage;
 
-            const exitEdit = document.getElementById("crossEdit").addEventListener("click", event =>{
+            document.getElementById("crossEdit").addEventListener("click", event =>{
                 document.getElementById("newEditIcon").remove();
                 textEdit.value = "";
                 document.getElementById("crossEdit").remove();
@@ -1141,4 +1153,17 @@ function main() {
         }
 
     });
+
+    viewMess = setInterval(() =>{
+        chatApiService.getMessages().then((res) => {
+            if(lastMess.id !== res[0].id || lastMess.text !== res[0].text){
+                chatController.showMessages();
+            }
+        })
+    }, 5000);
+
+    setInterval(() => {
+        chatController.showUsers();
+    }, 60000)
+
 }
